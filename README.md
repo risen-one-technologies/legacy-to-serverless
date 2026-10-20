@@ -1,10 +1,18 @@
-# USDA APS Serverless Modernization
+# USDA APS: Legacy-to-Serverless Modernization
 
-This repository contains a serverless modernization demo for the USDA Application Processing System (APS). It includes Python Lambda handlers, AWS SAM infrastructure for the retained baseline stack, a separate Serverless Framework v3 preview deployment, and a static browser frontend.
+This repository demonstrates the modernization of the USDA Application Processing System (APS) from a legacy Java/Maven application to an AWS serverless implementation. The original application is preserved in `legacy/`; the serverless implementation currently lives at the repository root and includes Python Lambda handlers, API Gateway and DynamoDB infrastructure, and a static browser frontend. AWS SAM and the Serverless Framework are deployment tools used by the serverless implementation, not the two applications being compared.
 
 > **Migration safeguard:** The existing SAM stack `aps-serverless-dev` is retained. Do not delete it until migration and cutover requirements have been confirmed and the responsible project owners have approved the change. The v3 preview shares the `aps-applications` DynamoDB table, so preview activity can read or write data used by the SAM deployment.
 
-## Current deployment layout
+## Legacy APS application
+
+The original Java/Maven application is preserved in `legacy/`, including its `pom.xml`, `src/`, and `database/` directories. This folder provides the legacy application context for the modernization and is separate from the serverless runtime.
+
+## Serverless implementation
+
+The serverless APS implementation currently lives at the repository root. Its Python handlers are in `src/handlers/`, shared application logic is in `src/services/`, and the browser interface is in `frontend/`. `template.yaml`, `samconfig.toml`, and `serverless.yml` describe infrastructure and deployment configurations for this implementation.
+
+## Serverless deployment configuration
 
 | Component | Current configuration |
 | --- | --- |
@@ -14,7 +22,7 @@ This repository contains a serverless modernization demo for the USDA Applicatio
 | Preview API base URL | `https://6d5kt7gaoh.execute-api.us-east-1.amazonaws.com/dev` |
 | Local frontend origin | `http://127.0.0.1:5500` |
 
-The SAM template declares the `aps-applications` table and the SAM application resources. The Serverless Framework v3 configuration names the table in `APPLICATIONS_TABLE` and grants its functions table permissions; it does not declare a second DynamoDB table. Both stacks therefore depend on the same named table. The SAM configuration currently specifies Python 3.14 for its functions, while `serverless.yml` specifies Python 3.11 for the preview functions.
+The SAM template declares the `aps-applications` table and related resources for the serverless application. The Serverless Framework v3 preview names the table in `APPLICATIONS_TABLE` and grants its functions table permissions; it does not declare a second DynamoDB table. Both deployment configurations therefore depend on the same named table. The SAM configuration currently specifies Python 3.14 for its functions, while `serverless.yml` specifies Python 3.11 for the preview functions.
 
 ## Architecture
 
@@ -126,11 +134,13 @@ For the retained SAM stack, `samconfig.toml` sets the stack name to `aps-serverl
 
 ## Repository map
 
-- `src/handlers/` — Lambda entry points for health, create, list, and get operations.
-- `src/services/application_service.py` — application validation and draft record construction.
-- `tests/` — Python unit tests for service and handlers.
-- `template.yaml` — AWS SAM infrastructure definition.
-- `samconfig.toml` — SAM deployment defaults, including `aps-serverless-dev`.
-- `serverless.yml` — Serverless Framework v3 preview service and function permissions/routes.
-- `frontend/` — static APS dashboard.
-- `events/` — sample Lambda event payloads.
+- `legacy/` — original Java/Maven APS application (`pom.xml`, `src/`, and `database/`).
+- The serverless implementation currently lives at the repository root:
+  - `src/handlers/` — Lambda entry points for health, create, list, and get operations.
+  - `src/services/application_service.py` — application validation and draft record construction.
+  - `tests/` — Python unit tests for service and handlers.
+  - `template.yaml` — AWS SAM infrastructure definition.
+  - `samconfig.toml` — SAM deployment defaults, including `aps-serverless-dev`.
+  - `serverless.yml` — Serverless Framework v3 preview service and function permissions/routes.
+  - `frontend/` — static APS dashboard.
+  - `events/` — sample Lambda event payloads.

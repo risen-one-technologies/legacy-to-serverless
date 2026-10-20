@@ -1,0 +1,175 @@
+
+service: aps-serverless-v3-preview
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  stage: dev
+  environment:
+    APPLICATIONS_TABLE: aps-applications
+  stackTags:
+    Environment: dev
+    Application: aps-serverless-v3-preview
+
+functions:
+  health:
+    handler: src.handlers.health.lambda_handler
+    timeout: 10
+    role:
+      Fn::GetAtt:
+        - HealthFunctionRole
+        - Arn
+    events:
+      - http:
+          path: health
+          method: get
+          cors:
+            origin: http://127.0.0.1:5500
+            headers:
+              - Content-Type
+              - Authorization
+
+  createApplication:
+    handler: src.handlers.create_application.lambda_handler
+    timeout: 10
+    role:
+      Fn::GetAtt:
+        - CreateApplicationFunctionRole
+        - Arn
+    events:
+      - http:
+          path: applications
+          method: post
+          cors:
+            origin: http://127.0.0.1:5500
+            headers:
+              - Content-Type
+              - Authorization
+
+  listApplications:
+    handler: src.handlers.list_applications.lambda_handler
+    timeout: 10
+    role:
+      Fn::GetAtt:
+        - ListApplicationsFunctionRole
+        - Arn
+    events:
+      - http:
+          path: applications
+          method: get
+          cors:
+            origin: http://127.0.0.1:5500
+            headers:
+              - Content-Type
+              - Authorization
+
+  getApplication:
+    handler: src.handlers.get_application.lambda_handler
+    timeout: 10
+    role:
+      Fn::GetAtt:
+        - GetApplicationFunctionRole
+        - Arn
+    events:
+      - http:
+          path: applications/{applicationId}
+          method: get
+          cors:
+            origin: http://127.0.0.1:5500
+            headers:
+              - Content-Type
+              - Authorization
+
+resources:
+  Resources:
+    HealthFunctionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+    CreateApplicationFunctionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: ApplicationsTableAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:PutItem
+                  Resource:
+                    - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/aps-applications
+
+    ListApplicationsFunctionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: ApplicationsTableAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:Scan
+                  Resource:
+                    - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/aps-applications
+
+    GetApplicationFunctionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: ApplicationsTableAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:GetItem
+                  Resource:
+                    - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/aps-applications
